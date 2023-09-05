@@ -8,13 +8,13 @@ export default createStore({
 	},
 
 	mutations: {
-		set_user(state, user) {
+		setUser(state, user) {
 			state.user = user
 		}
 	},
 
 	getters: {
-		get_user(state) {
+		getUser(state) {
 			return state.user
 		}
 	}

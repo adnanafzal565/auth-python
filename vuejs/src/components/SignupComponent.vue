@@ -50,14 +50,14 @@
 
         methods: {
             signup: async function () {
-                const form = event.target;
-                const formData = new FormData(form);
-
-                this.isLoading = true;
+                const form = event.target
+                const formData = new FormData(form)
+                
+                this.isLoading = true
 
                 try {
                     const response = await axios.post(
-                        this.$api_url + "/signup",
+                        this.$apiURL + "/signup",
                         formData
                     );
                     

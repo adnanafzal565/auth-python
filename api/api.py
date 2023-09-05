@@ -1,46 +1,112 @@
 import uvicorn, random, string, bcrypt, jwt, time, auth
 from datetime import datetime, timezone as timezone_module, timedelta
 from dateutil import tz
-from fastapi import Request, Form
-from typing_extensions import Annotated
+import os
+
+from fastapi import Request, Form, UploadFile
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+
+from typing_extensions import Annotated
 from bson.objectid import ObjectId
-from config import jwt_secret, app, auth_app, db
+from config import jwt_secret, app, auth_app, db, base_url
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins=["*"],
 	allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
+	allow_methods=["*"],
+	allow_headers=["*"]
 )
 
-@app.post("/logout")
-def logout(access_token: Annotated[str, Form()]):
-	try:
-		payload = jwt.decode(access_token, jwt_secret, algorithms = "HS256")
+@auth_app.post("/change-password")
+def change_password(password: Annotated[str, Form()], new_password: Annotated[str, Form()], confirm_password: Annotated[str, Form()], request: Request):
+	user = request.state.user
 
-		db["users"].find_one_and_update({
-			"_id": ObjectId(payload["user_id"])
-		}, {
-			"$unset": {
-				"access_token": 1
-			}
-		})
-
-		return {
-			"status": "success",
-			"message": "User has been logged-out."
-		}
-	except Exception as error:
+	if bcrypt.checkpw(password.encode("UTF-8"), user["password"]) != True:
 		return {
 			"status": "error",
-			"message": "You have been logged-out.",
-			"error": str(error)
+			"message": "Password is in-correct."
 		}
 
+	if new_password != confirm_password:
+		return {
+			"status": "error",
+			"message": "Password does not match."
+		}
+
+	db["users"].find_one_and_update({
+		"_id": ObjectId(user["_id"])
+	}, {
+		"$set": {
+			"password": bcrypt.hashpw(new_password.encode("UTF-8"), bcrypt.gensalt())
+		}
+	})
+
+	return {
+		"status": "success",
+		"message": "Password has been updated."
+	}
+
+@auth_app.post("/save-profile")
+def save_profile(name: Annotated[str, Form()], profile_image: UploadFile, request: Request):
+	# profile_image.filename
+	# profile_image.content_type
+	# profile_image.size
+	# profile_image.file
+
+	user = request.state.user
+	file_location = ""
+
+	if profile_image and profile_image.size > 0:
+
+		if not os.path.exists("uploads"):
+			os.path.makedirs("uploads")
+
+		file_location = "uploads/" + str(int(time.mktime(datetime.now().timetuple()))) + "-" + profile_image.filename
+		with open(file_location, "wb+") as file_object:
+			file_object.write(profile_image.file.read())
+
+		if (os.path.exists(user["profile_image"])):
+			os.remove(user["profile_image"])
+
+	db["users"].find_one_and_update({
+		"_id": ObjectId(user["_id"])
+	}, {
+		"$set": {
+			"name": name,
+			"profile_image": file_location
+		}
+	})
+
+	return {
+		"status": "success",
+		"message": "Profile has been updated.",
+		"file_location": base_url + "/" + file_location
+	}
+
+@auth_app.post("/logout")
+def logout(request: Request):
+
+	user = request.state.user
+
+	db["users"].find_one_and_update({
+		"_id": user["_id"]
+	}, {
+		"$unset": {
+			"access_token": 1
+		}
+	})
+
+	return {
+		"status": "success",
+		"message": "User has been logged-out."
+	}
+
 @auth_app.post("/me")
-def get_user(timezone: Annotated[str, Form()], access_token: Annotated[str, Form()], request: Request):
+def get_user(timezone: Annotated[str, Form()], request: Request):
 
 	user = request.state.user
 
@@ -50,7 +116,8 @@ def get_user(timezone: Annotated[str, Form()], access_token: Annotated[str, Form
 		"user": {
 			"_id": user["_id"],
 			"name": user["name"],
-			"email": user["email"]
+			"email": user["email"],
+			"profile_image": base_url + "/" + user["profile_image"]
 		}
 	}
 
@@ -94,7 +161,8 @@ def login(email: Annotated[str, Form()], password: Annotated[str, Form()]):
 		"user": {
 			"_id": str(user["_id"]),
 			"name": user["name"],
-			"email": user["email"]
+			"email": user["email"],
+			"profile_image": base_url + "/" + user["profile_image"]
 		}
 	}
 
@@ -140,4 +208,4 @@ def convert_utc_to_local(timezone, utc):
 app.mount("/", auth_app)
 
 if __name__ == "__main__":
-	uvicorn.run(app, port=8000, host="127.0.0.1")
+	uvicorn.run(app, port=port, host=host)

@@ -1,1 +1,3 @@
 vuejs/node_modules
+api/uploads/*
+api/__pycache__

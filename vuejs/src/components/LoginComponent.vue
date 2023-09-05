@@ -45,28 +45,28 @@
 
         methods: {
             login: async function () {
-                const form = event.target;
-                const formData = new FormData(form);
+                const form = event.target
+                const formData = new FormData(form)
 
-                this.isLoading = true;
+                this.isLoading = true
 
                 try {
                     const response = await axios.post(
-                        this.$api_url + "/login",
+                        this.$apiURL + "/login",
                         formData
                     )
 
                     if (response.data.status == "success") {
                         // get access token from server
-                        const access_token = response.data.access_token
+                        const accessToken = response.data.access_token
 
                         // save in local storage
-                        localStorage.setItem(this.$access_token_key, access_token)
+                        localStorage.setItem(this.$accessTokenKey, accessToken)
 
-                        store.commit("set_user", response.data.user)
+                        store.commit("setUser", response.data.user)
                         form.reset()
 
-                        this.$headers.headers.Authorization = "Bearer " + localStorage.getItem(this.$access_token_key)
+                        this.$headers.headers.Authorization = "Bearer " + localStorage.getItem(this.$accessTokenKey)
 
                         // to go to home page without refreshing
                         this.$router.push("/")

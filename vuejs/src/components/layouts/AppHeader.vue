@@ -21,9 +21,21 @@
 		        </li>
 	        </template>
 
-	        <li class="nav-item" v-else>
-	          <a href="javascript:void(0)" v-on:click="logout" class="nav-link">Logout</a>
-	        </li>
+	        <template v-else>
+				<li class="nav-item">
+					<div class="dropdown">
+						<button class="btn btn-link dropdown-toggle" type="button" id="dropdownMenuUser" data-bs-toggle="dropdown" aria-expanded="false"
+							v-text="user.name" style="text-decoration: none;
+								color: initial;"></button>
+						<ul class="dropdown-menu" aria-labelledby="dropdownMenuUser">
+							<li>
+								<router-link class="dropdown-item" to="/my-profile">My profile</router-link>
+							</li>
+							<li><a class="dropdown-item" href="javascript:void(0)" v-on:click="logout">Logout</a></li>
+						</ul>
+					</div>
+				</li>
+	        </template>
 
 	      </ul>
 	    </div>
@@ -34,8 +46,9 @@
 <script>
 
 	import "../../assets/css/bootstrap.css"
-	import "../../assets/js/jquery.js"
 	import "../../assets/js/bootstrap.js"
+	import "../../assets/js/jquery.js"
+	import "../../assets/js/popper.min.js"
 
 	import axios from "axios"
 	import swal from "sweetalert2"
@@ -46,24 +59,24 @@
 
 		computed: {
 			user() {
-				return store.getters.get_user
+				return store.getters.getUser
 			}
 		},
 
 		methods: {
 			async logout() {
 				const formData = new FormData()
-				formData.append("access_token", localStorage.getItem(this.$access_token_key))
 				
 				try {
                     const response = await axios.post(
-                        this.$api_url + "/logout",
-                        formData
+                        this.$apiURL + "/logout",
+                        formData,
+                        this.$headers
                     )
                     
                     if (response.data.status == "success") {
-                    	store.commit("set_user", null)
-                    	localStorage.removeItem(this.$access_token_key)
+                    	store.commit("setUser", null)
+                    	localStorage.removeItem(this.$accessTokenKey)
                     	this.$router.push("/login")
                     }
                 } catch (exp) {
@@ -73,18 +86,17 @@
 
 			async get_data() {
 				const formData = new FormData()
-				formData.append("access_token", localStorage.getItem(this.$access_token_key))
 				formData.append("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone)
 				
 				try {
                     const response = await axios.post(
-                        this.$api_url + "/me",
+                        this.$apiURL + "/me",
                         formData,
                         this.$headers
                     )
                     
                     if (response.data.status == "success") {
-                    	store.commit("set_user", response.data.user)
+                    	store.commit("setUser", response.data.user)
                     }
                 } catch (exp) {
                     console.log(exp)

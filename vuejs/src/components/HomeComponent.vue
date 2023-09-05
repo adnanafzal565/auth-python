@@ -24,24 +24,7 @@
 
 		methods: {
 			async getData() {
-				const formData = new FormData()
-				formData.append("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone)
-
-				try {
-					const response = await axios.post(
-						this.$api_url + "/fetch-data",
-						formData,
-						this.$headers
-					)
-
-					if (response.data.status == "success") {
-						this.data = response.data.data
-					}
-				} catch (exp) {
-					// if (exp?.response?.statusText) {
-					// 	swal.fire("Error", exp.response.statusText, "error")
-					// }
-				}
+				//
 			}
 		},
 
