@@ -34,6 +34,8 @@ pip3 install uvicorn
 uvicorn api:app --reload
 ```
 
+Create a folder named "uploads" inside "api" folder.
+
 ### Run Vue JS
 
 - Open command prompt in "vuejs" folder and run the following commands:
